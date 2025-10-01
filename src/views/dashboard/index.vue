@@ -1,13 +1,114 @@
 <template>
   <div class="dashboard-container">
+    <!-- github 角标 -->
+    <github-corner class="github-corner" />
+
     <el-card shadow="never" class="mt-2">
       <div class="flex flex-wrap">
         <!-- 左侧问候语区域 -->
         <div class="flex-1 flex items-start">
-          <img class="w80px h80px rounded-full" :src="userStore.userInfo.avatar + '?imageView2/1/w/80/h/80'" />
+          <img
+            class="w80px h80px rounded-full"
+            :src="userStore.userInfo.avatar + '?imageView2/1/w/80/h/80'"
+          />
           <div class="ml-5">
             <p>{{ greetings }}</p>
             <p class="text-sm text-gray">今日天气晴朗，气温在15℃至25℃之间，东南风。</p>
+          </div>
+        </div>
+
+        <!-- 右侧图标区域 - PC端 -->
+        <div class="hidden sm:block">
+          <div class="flex items-end space-x-6">
+            <!-- 仓库 -->
+            <div>
+              <div class="font-bold color-#ff9a2e text-sm flex items-center">
+                <el-icon class="mr-2px"><Folder /></el-icon>
+                仓库
+              </div>
+              <div class="mt-3 whitespace-nowrap">
+                <el-link href="https://gitee.com/youlaiorg/vue3-element-admin" target="_blank">
+                  <div class="i-svg:gitee text-lg color-#F76560" />
+                </el-link>
+                <el-divider direction="vertical" />
+                <el-link href="https://github.com/youlaitech/vue3-element-admin" target="_blank">
+                  <div class="i-svg:github text-lg color-#4080FF" />
+                </el-link>
+                <el-divider direction="vertical" />
+                <el-link href="https://gitcode.com/youlai/vue3-element-admin" target="_blank">
+                  <div class="i-svg:gitcode text-lg color-#FF9A2E" />
+                </el-link>
+              </div>
+            </div>
+
+            <!-- 文档 -->
+            <div>
+              <div class="font-bold color-#4080ff text-sm flex items-center">
+                <el-icon class="mr-2px"><Document /></el-icon>
+                文档
+              </div>
+              <div class="mt-3 whitespace-nowrap">
+                <el-link href="https://juejin.cn/post/7228990409909108793" target="_blank">
+                  <div class="i-svg:juejin text-lg" />
+                </el-link>
+                <el-divider direction="vertical" />
+                <el-link
+                  href="https://youlai.blog.csdn.net/article/details/130191394"
+                  target="_blank"
+                >
+                  <div class="i-svg:csdn text-lg" />
+                </el-link>
+                <el-divider direction="vertical" />
+                <el-link href="https://www.cnblogs.com/haoxianrui/p/17331952.html" target="_blank">
+                  <div class="i-svg:cnblogs text-lg" />
+                </el-link>
+              </div>
+            </div>
+
+            <!-- 视频 -->
+            <div>
+              <div class="font-bold color-#f76560 text-sm flex items-center">
+                <el-icon class="mr-2px"><VideoCamera /></el-icon>
+                视频
+              </div>
+              <div class="mt-3 whitespace-nowrap">
+                <el-link href="https://www.bilibili.com/video/BV1eFUuYyEFj" target="_blank">
+                  <div class="i-svg:bilibili text-lg" />
+                </el-link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 移动端图标区域 -->
+        <div class="w-full sm:hidden mt-3">
+          <div class="flex justify-end space-x-4 overflow-x-auto">
+            <!-- 仓库图标 -->
+            <el-link href="https://gitee.com/youlaiorg/vue3-element-admin" target="_blank">
+              <div class="i-svg:gitee text-lg color-#F76560" />
+            </el-link>
+            <el-link href="https://github.com/youlaitech/vue3-element-admin" target="_blank">
+              <div class="i-svg:github text-lg color-#4080FF" />
+            </el-link>
+            <el-link href="https://gitcode.com/youlai/vue3-element-admin" target="_blank">
+              <div class="i-svg:gitcode text-lg color-#FF9A2E" />
+            </el-link>
+
+            <!-- 文档图标 -->
+            <el-link href="https://juejin.cn/post/7228990409909108793" target="_blank">
+              <div class="i-svg:juejin text-lg" />
+            </el-link>
+            <el-link href="https://youlai.blog.csdn.net/article/details/130191394" target="_blank">
+              <div class="i-svg:csdn text-lg" />
+            </el-link>
+            <el-link href="https://www.cnblogs.com/haoxianrui/p/17331952.html" target="_blank">
+              <div class="i-svg:cnblogs text-lg" />
+            </el-link>
+
+            <!-- 视频图标 -->
+            <el-link href="https://www.bilibili.com/video/BV1eFUuYyEFj" target="_blank">
+              <div class="i-svg:bilibili text-lg" />
+            </el-link>
           </div>
         </div>
       </div>
@@ -31,15 +132,11 @@
                 {{ onlineUserCount }}
               </span>
               <span v-if="isConnected" class="ml-2 text-xs text-[#67c23a]">
-                <el-icon>
-                  <Connection />
-                </el-icon>
+                <el-icon><Connection /></el-icon>
                 已连接
               </span>
               <span v-else class="ml-2 text-xs text-[#f56c6c]">
-                <el-icon>
-                  <Failed />
-                </el-icon>
+                <el-icon><Failed /></el-icon>
                 未连接
               </span>
             </div>
@@ -87,11 +184,13 @@
               <div class="flex-x-between mt-2 flex-1">
                 <div class="flex-y-center">
                   <span class="text-lg">{{ Math.round(transitionUvCount) }}</span>
-                  <span :class="[
-                    'text-xs',
-                    'ml-2',
-                    computeGrowthRateClass(visitStatsData.uvGrowthRate),
-                  ]">
+                  <span
+                    :class="[
+                      'text-xs',
+                      'ml-2',
+                      computeGrowthRateClass(visitStatsData.uvGrowthRate),
+                    ]"
+                  >
                     <el-icon>
                       <Top v-if="visitStatsData.uvGrowthRate > 0" />
                       <Bottom v-else-if="visitStatsData.uvGrowthRate < 0" />
@@ -145,11 +244,13 @@
               <div class="flex-x-between mt-2 flex-1">
                 <div class="flex-y-center">
                   <span class="text-lg">{{ Math.round(transitionPvCount) }}</span>
-                  <span :class="[
-                    'text-xs',
-                    'ml-2',
-                    computeGrowthRateClass(visitStatsData.pvGrowthRate),
-                  ]">
+                  <span
+                    :class="[
+                      'text-xs',
+                      'ml-2',
+                      computeGrowthRateClass(visitStatsData.pvGrowthRate),
+                    ]"
+                  >
                     <el-icon>
                       <Top v-if="visitStatsData.pvGrowthRate > 0" />
                       <Bottom v-else-if="visitStatsData.pvGrowthRate < 0" />
@@ -192,20 +293,29 @@
           <template #header>
             <div class="flex-x-between">
               <span class="header-title">最新动态</span>
-              <el-link type="primary" underline="never" href="https://gitee.com/youlaiorg/vue3-element-admin/releases"
-                target="_blank">
+              <el-link
+                type="primary"
+                underline="never"
+                href="https://gitee.com/youlaiorg/vue3-element-admin/releases"
+                target="_blank"
+              >
                 完整记录
-                <el-icon class="link-icon">
-                  <TopRight />
-                </el-icon>
+                <el-icon class="link-icon"><TopRight /></el-icon>
               </el-link>
             </div>
           </template>
 
           <el-scrollbar height="400px">
             <el-timeline class="p-3">
-              <el-timeline-item v-for="(item, index) in vesionList" :key="index" :timestamp="item.date" placement="top"
-                :color="index === 0 ? '#67C23A' : '#909399'" :hollow="index !== 0" size="large">
+              <el-timeline-item
+                v-for="(item, index) in vesionList"
+                :key="index"
+                :timestamp="item.date"
+                placement="top"
+                :color="index === 0 ? '#67C23A' : '#909399'"
+                :hollow="index !== 0"
+                size="large"
+              >
                 <div class="version-item" :class="{ 'latest-item': index === 0 }">
                   <div>
                     <el-text tag="strong">{{ item.title }}</el-text>
@@ -217,12 +327,14 @@
                   <el-text class="version-content">{{ item.content }}</el-text>
 
                   <div v-if="item.link">
-                    <el-link :type="index === 0 ? 'primary' : 'info'" :href="item.link" target="_blank"
-                      underline="never">
+                    <el-link
+                      :type="index === 0 ? 'primary' : 'info'"
+                      :href="item.link"
+                      target="_blank"
+                      underline="never"
+                    >
                       详情
-                      <el-icon class="link-icon">
-                        <TopRight />
-                      </el-icon>
+                      <el-icon class="link-icon"><TopRight /></el-icon>
                     </el-link>
                   </div>
                 </div>
@@ -242,12 +354,12 @@ defineOptions({
 });
 
 import { dayjs } from "element-plus";
-import LogAPI, { VisitStatsVO, VisitTrendVO } from "@/api/system/log.api";
-import { useUserStore } from "@/store/modules/user.store";
+import LogAPI, { VisitStatsVO, VisitTrendVO } from "@/api/system/log-api";
+import { useUserStore } from "@/store/modules/user-store";
 import { formatGrowthRate } from "@/utils";
 import { useTransition, useDateFormat } from "@vueuse/core";
 import { Connection, Failed } from "@element-plus/icons-vue";
-import { useOnlineCount } from "@/composables/useOnlineCount";
+import { useOnlineCount } from "@/composables";
 
 // 在线用户数量组件相关
 const { onlineUserCount, lastUpdateTime, isConnected } = useOnlineCount();
@@ -532,11 +644,9 @@ onMounted(() => {
       background: var(--el-color-primary-light-9);
       border: 1px solid var(--el-color-primary-light-5);
     }
-
     &:hover {
       transform: translateX(5px);
     }
-
     .version-content {
       margin-bottom: 12px;
       font-size: 13px;

@@ -1,5 +1,5 @@
-import type {App} from "vue";
-import {createRouter, createWebHashHistory, type RouteRecordRaw} from "vue-router";
+import type { App } from "vue";
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from "vue-router";
 
 export const Layout = () => import("@/layouts/index.vue");
 
@@ -8,7 +8,7 @@ export const constantRoutes: RouteRecordRaw[] = [
   {
     path: "/redirect",
     component: Layout,
-    meta: {hidden: true},
+    meta: { hidden: true },
     children: [
       {
         path: "/redirect/:path(.*)",
@@ -18,19 +18,9 @@ export const constantRoutes: RouteRecordRaw[] = [
   },
 
   {
-    path: "/sample",
-    component: () => import("@/views/product/product/index.vue"),
-    meta: {hidden: true},
-  },
-  {
-    path: "/thirdparty/token-config",
-    component: () => import("@/views/thirdparty/token-config/index.vue"),
-    meta: {hidden: true},
-  },
-  {
     path: "/login",
     component: () => import("@/views/login/index.vue"),
-    meta: {hidden: true},
+    meta: { hidden: true },
   },
 
   {
@@ -55,30 +45,30 @@ export const constantRoutes: RouteRecordRaw[] = [
       {
         path: "401",
         component: () => import("@/views/error/401.vue"),
-        meta: {hidden: true},
+        meta: { hidden: true },
       },
       {
         path: "404",
         component: () => import("@/views/error/404.vue"),
-        meta: {hidden: true},
+        meta: { hidden: true },
       },
       {
         path: "profile",
         name: "Profile",
         component: () => import("@/views/profile/index.vue"),
-        meta: {title: "个人中心", icon: "user", hidden: true},
+        meta: { title: "个人中心", icon: "user", hidden: true },
       },
       {
         path: "my-notice",
         name: "MyNotice",
         component: () => import("@/views/system/notice/components/MyNotice.vue"),
-        meta: {title: "我的通知", icon: "user", hidden: true},
+        meta: { title: "我的通知", icon: "user", hidden: true },
       },
       {
         path: "/detail/:id(\\d+)",
         name: "DemoDetail",
         component: () => import("@/views/demo/detail.vue"),
-        meta: {title: "详情页缓存", icon: "user", hidden: true, keepAlive: true},
+        meta: { title: "详情页缓存", icon: "user", hidden: true, keepAlive: true },
       },
     ],
   },
@@ -91,7 +81,7 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: constantRoutes,
   // 刷新时，滚动条位置还原
-  scrollBehavior: () => ({left: 0, top: 0}),
+  scrollBehavior: () => ({ left: 0, top: 0 }),
 });
 
 // 全局注册 router

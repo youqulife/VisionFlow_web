@@ -1,0 +1,649 @@
+<template>
+  <div class="app-container">
+    <div class="search-container">
+      <el-form ref="queryFormRef" :model="queryParams" :inline="true">
+        <el-form-item class="search-buttons">
+          <el-button type="primary" icon="search" @click="handleQuery">搜索</el-button>
+          <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+
+    <el-card shadow="never">
+      <div class="mb-10px">
+        <el-button
+          v-hasPerm="['customer:eye-exam:add']"
+          type="success"
+          icon="plus"
+          @click="handleOpenDialog()"
+        >
+          新增
+        </el-button>
+        <el-button
+          v-hasPerm="['customer:eye-exam:delete']"
+          type="danger"
+          :disabled="removeIds.length === 0"
+          icon="delete"
+          @click="handleDelete()"
+        >
+          删除
+        </el-button>
+      </div>
+
+      <el-table
+        ref="dataTableRef"
+        v-loading="loading"
+        :data="pageData"
+        highlight-current-row
+        border
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column key="id" label="主键ID" prop="id" min-width="150" align="center" />
+        <el-table-column
+          key="customerId"
+          label="关联的顾客ID"
+          prop="customerId"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="examDate"
+          label="验光日期"
+          prop="examDate"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="optometrist"
+          label="验光师"
+          prop="optometrist"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="examType"
+          label="验光类型"
+          prop="examType"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column key="odSph" label="右眼球镜" prop="odSph" min-width="150" align="center" />
+        <el-table-column key="odCyl" label="右眼柱镜" prop="odCyl" min-width="150" align="center" />
+        <el-table-column
+          key="odAxis"
+          label="右眼轴位"
+          prop="odAxis"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column key="odPd" label="右眼瞳距" prop="odPd" min-width="150" align="center" />
+        <el-table-column key="osSph" label="左眼球镜" prop="osSph" min-width="150" align="center" />
+        <el-table-column key="osCyl" label="左眼柱镜" prop="osCyl" min-width="150" align="center" />
+        <el-table-column
+          key="osAxis"
+          label="左眼轴位"
+          prop="osAxis"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column key="osPd" label="左眼瞳距" prop="osPd" min-width="150" align="center" />
+        <el-table-column
+          key="pdTotal"
+          label="双眼瞳距"
+          prop="pdTotal"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="addition"
+          label="下加光"
+          prop="addition"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="wearingHistory"
+          label="带镜史数据"
+          prop="wearingHistory"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="hasGlassesHistory"
+          label="是否有戴镜史"
+          prop="hasGlassesHistory"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="isFirstExam"
+          label="是否首次验光"
+          prop="isFirstExam"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column key="isDeleted" label="" prop="isDeleted" min-width="150" align="center" />
+        <el-table-column
+          key="createTime"
+          label=""
+          prop="createTime"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="updateTime"
+          label=""
+          prop="updateTime"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column fixed="right" label="操作" width="220">
+          <template #default="scope">
+            <el-button
+              v-hasPerm="['customer:eye-exam:edit']"
+              type="primary"
+              size="small"
+              link
+              icon="edit"
+              @click="handleOpenDialog(scope.row.id)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              v-hasPerm="['customer:eye-exam:delete']"
+              type="danger"
+              size="small"
+              link
+              icon="delete"
+              @click="handleDelete(scope.row.id)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <pagination
+        v-if="total > 0"
+        v-model:total="total"
+        v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize"
+        @pagination="handleQuery()"
+      />
+    </el-card>
+
+    <!-- 验光记录表单弹窗 -->
+    <el-drawer v-model="dialog.visible" :title="dialog.title" size="50%" @close="handleCloseDialog">
+      <el-form ref="dataFormRef" :model="formData" :rules="rules" label-width="100px">
+        <el-input v-model="formData.id" type="hidden" />
+        <el-form-item label="关联顾客" prop="customerId">
+          <el-space v-if="selectedCustomer.id">
+            <span>姓名：{{ selectedCustomer.name }}</span>
+            <span>手机：{{ selectedCustomer.phone }}</span>
+            <el-button v-if="!formData.id" type="primary" link @click="clearCustomerSelection">
+              重新选择
+            </el-button>
+          </el-space>
+          <el-row v-else :gutter="10" class="w-full">
+            <el-col :span="18">
+              <el-input
+                v-model="customerSearch.phone"
+                placeholder="请输入顾客手机号码进行检索"
+                clearable
+                @keyup.enter="searchCustomers"
+              />
+            </el-col>
+            <el-col :span="6">
+              <el-button type="primary" @click="searchCustomers">搜索</el-button>
+            </el-col>
+          </el-row>
+          <el-table
+            v-if="showCustomerTable && !selectedCustomer.id"
+            :data="customerList"
+            border
+            highlight-current-row
+            style="margin-top: 10px"
+            @row-click="selectCustomer"
+          >
+            <el-table-column prop="name" label="顾客姓名" width="120" />
+            <el-table-column prop="phone" label="手机号码" />
+            <el-table-column label="操作" width="120">
+              <template #default="scope">
+                <el-button type="primary" link @click.stop="selectCustomer(scope.row)">
+                  选择
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+          <div
+            v-if="showCustomerTable && !selectedCustomer.id && customerTotal === 0"
+            class="el-table__empty-block"
+          >
+            <el-empty description="未找到相关顾客" :image-size="80">
+              <el-button type="primary" @click="goToCustomerManagement">前往顾客管理</el-button>
+            </el-empty>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="验光日期" prop="examDate">
+          <el-date-picker
+            v-model="formData.examDate"
+            class="!w-[240px]"
+            type="date"
+            placeholder="验光日期"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+
+        <el-form-item label="验光师" prop="optometrist">
+          <el-input v-model="formData.optometrist" placeholder="验光师" />
+        </el-form-item>
+
+        <el-form-item label="验光类型" prop="examType">
+          <el-input v-model="formData.examType" placeholder="验光类型" />
+        </el-form-item>
+
+        <!-- 左右眼数据分列显示 -->
+        <el-row :gutter="20">
+          <!-- 左眼数据列 -->
+          <el-col :span="12">
+            <el-card class="eye-data-card" shadow="never">
+              <template #header>
+                <div class="card-header">
+                  <span>左眼数据</span>
+                </div>
+              </template>
+
+              <el-form-item label="球镜" prop="osSph">
+                <el-input-number
+                  v-model="formData.osSph"
+                  placeholder="左眼球镜"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="柱镜" prop="osCyl">
+                <el-input-number
+                  v-model="formData.osCyl"
+                  placeholder="左眼柱镜"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="轴位" prop="osAxis">
+                <el-input-number
+                  v-model="formData.osAxis"
+                  placeholder="左眼轴位"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="瞳距" prop="osPd">
+                <el-input-number
+                  v-model="formData.osPd"
+                  placeholder="左眼瞳距"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+            </el-card>
+          </el-col>
+
+          <!-- 右眼数据列 -->
+          <el-col :span="12">
+            <el-card class="eye-data-card" shadow="never">
+              <template #header>
+                <div class="card-header">
+                  <span>右眼数据</span>
+                </div>
+              </template>
+
+              <el-form-item label="球镜" prop="odSph">
+                <el-input-number
+                  v-model="formData.odSph"
+                  placeholder="右眼球镜"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="柱镜" prop="odCyl">
+                <el-input-number
+                  v-model="formData.odCyl"
+                  placeholder="右眼柱镜"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="轴位" prop="odAxis">
+                <el-input-number
+                  v-model="formData.odAxis"
+                  placeholder="右眼轴位"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+
+              <el-form-item label="瞳距" prop="odPd">
+                <el-input-number
+                  v-model="formData.odPd"
+                  placeholder="右眼瞳距"
+                  class="w-full"
+                  controls-position="right"
+                />
+              </el-form-item>
+            </el-card>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="双眼瞳距" prop="pdTotal">
+          <el-input-number
+            v-model="formData.pdTotal"
+            placeholder="双眼瞳距"
+            class="!w-[240px]"
+            controls-position="right"
+          />
+        </el-form-item>
+
+        <el-form-item label="下加光" prop="addition">
+          <el-input v-model="formData.addition" placeholder="下加光" class="!w-[240px]" />
+        </el-form-item>
+
+        <el-form-item label="带镜史数据" prop="wearingHistory">
+          <el-input v-model="formData.wearingHistory" placeholder="带镜史数据" class="!w-[240px]" />
+        </el-form-item>
+
+        <el-form-item label="是否有戴镜史" prop="hasGlassesHistory">
+          <el-radio-group v-model="formData.hasGlassesHistory">
+            <el-radio :value="0">否</el-radio>
+            <el-radio :value="1">是</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item label="是否首次验光" prop="isFirstExam">
+          <el-radio-group v-model="formData.isFirstExam">
+            <el-radio :value="0">否</el-radio>
+            <el-radio :value="1">是</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="handleSubmit()">确定</el-button>
+          <el-button @click="handleCloseDialog()">取消</el-button>
+        </div>
+      </template>
+    </el-drawer>
+  </div>
+</template>
+
+<script setup lang="ts">
+defineOptions({
+  name: "EyeExam",
+  inheritAttrs: false,
+});
+
+import EyeExamAPI, {
+  EyeExamPageVO,
+  EyeExamForm,
+  EyeExamPageQuery,
+} from "@/api/customer/eye-exam-api";
+import CustomerAPI, { CustomerPageVO, CustomerPageQuery } from "@/api/customer/customer-api";
+import { useRouter } from "vue-router";
+
+const queryFormRef = ref();
+const dataFormRef = ref();
+const router = useRouter();
+
+const loading = ref(false);
+const removeIds = ref<number[]>([]);
+const total = ref(0);
+
+const queryParams = reactive<EyeExamPageQuery>({
+  pageNum: 1,
+  pageSize: 10,
+});
+
+// 顾客搜索相关
+const customerSearch = reactive({
+  phone: "",
+});
+const customerList = ref<CustomerPageVO[]>([]);
+const customerTotal = ref(0);
+const showCustomerTable = ref(false);
+const selectedCustomer = reactive({
+  id: undefined as number | undefined,
+  name: "",
+  phone: "",
+});
+
+// 验光记录表格数据
+const pageData = ref<EyeExamPageVO[]>([]);
+
+// 弹窗
+const dialog = reactive({
+  title: "",
+  visible: false,
+});
+
+// 验光记录表单数据
+const formData = reactive<EyeExamForm>({});
+
+// 验光记录表单校验规则
+const rules = reactive({
+  id: [{ required: true, message: "请输入主键ID", trigger: "blur" }],
+  examDate: [{ required: true, message: "请输入验光日期", trigger: "blur" }],
+  customerId: [
+    {
+      required: true,
+      validator: (rule: any, value: any, callback: any) => {
+        if (!selectedCustomer.id) {
+          callback(new Error("请选择关联顾客"));
+        } else {
+          callback();
+        }
+      },
+      trigger: "change",
+    },
+  ],
+});
+
+/** 查询验光记录 */
+function handleQuery() {
+  loading.value = true;
+  EyeExamAPI.getPage(queryParams)
+    .then((data) => {
+      pageData.value = data.list;
+      total.value = data.total;
+    })
+    .finally(() => {
+      loading.value = false;
+    });
+}
+
+/** 重置验光记录查询 */
+function handleResetQuery() {
+  queryFormRef.value!.resetFields();
+  queryParams.pageNum = 1;
+  handleQuery();
+}
+
+/** 行复选框选中记录选中ID集合 */
+function handleSelectionChange(selection: any) {
+  removeIds.value = selection.map((item: any) => item.id);
+}
+
+/** 搜索顾客 */
+function searchCustomers() {
+  if (!customerSearch.phone) {
+    ElMessage.warning("请输入手机号码");
+    return;
+  }
+
+  const queryParams: CustomerPageQuery = {
+    pageNum: 1,
+    pageSize: 10,
+    phone: customerSearch.phone,
+  };
+
+  CustomerAPI.getPage(queryParams).then((data) => {
+    customerList.value = data.list;
+    customerTotal.value = data.total;
+    showCustomerTable.value = true;
+  });
+}
+
+/** 选择顾客 */
+function selectCustomer(customer: CustomerPageVO) {
+  selectedCustomer.id = customer.id;
+  selectedCustomer.name = customer.name || "";
+  selectedCustomer.phone = customer.phone || "";
+  formData.customerId = customer.id ? Number(customer.id) : undefined;
+  showCustomerTable.value = false;
+  // 清除表单验证错误
+  if (dataFormRef.value) {
+    dataFormRef.value.clearValidate("customerId");
+  }
+}
+
+/** 清除顾客选择 */
+function clearCustomerSelection() {
+  selectedCustomer.id = undefined;
+  selectedCustomer.name = "";
+  selectedCustomer.phone = "";
+  formData.customerId = undefined;
+  customerSearch.phone = "";
+  customerList.value = [];
+  customerTotal.value = 0;
+  showCustomerTable.value = false;
+  // 重新验证customerId字段
+  nextTick(() => {
+    if (dataFormRef.value) {
+      dataFormRef.value.validateField("customerId");
+    }
+  });
+}
+
+/** 前往顾客管理页面 */
+function goToCustomerManagement() {
+  // 关闭当前弹窗
+  dialog.visible = false;
+  // 跳转到顾客管理页面
+  router.push("/customer/customer");
+}
+
+/** 打开验光记录弹窗 */
+function handleOpenDialog(id?: number) {
+  dialog.visible = true;
+  if (id) {
+    dialog.title = "修改验光记录";
+    EyeExamAPI.getFormData(id).then((data) => {
+      Object.assign(formData, data);
+      // 如果是编辑模式，设置选中的顾客信息
+      if (data.customerId) {
+        selectedCustomer.id = data.customerId;
+        selectedCustomer.name = data.customerName || "";
+        selectedCustomer.phone = data.customerPhone || "";
+      }
+    });
+  } else {
+    dialog.title = "新增验光记录";
+    // 重置顾客选择状态
+    clearCustomerSelection();
+  }
+}
+
+/** 提交验光记录表单 */
+function handleSubmit() {
+  dataFormRef.value.validate((valid: any) => {
+    if (valid) {
+      loading.value = true;
+      // 确保 customerId 是 number 类型
+      if (formData.customerId) {
+        formData.customerId = Number(formData.customerId);
+      }
+
+      const id = formData.id;
+      if (id) {
+        EyeExamAPI.update(id, formData)
+          .then(() => {
+            ElMessage.success("修改成功");
+            handleCloseDialog();
+            handleResetQuery();
+          })
+          .finally(() => (loading.value = false));
+      } else {
+        EyeExamAPI.create(formData)
+          .then(() => {
+            ElMessage.success("新增成功");
+            handleCloseDialog();
+            handleResetQuery();
+          })
+          .finally(() => (loading.value = false));
+      }
+    }
+  });
+}
+
+/** 关闭验光记录弹窗 */
+function handleCloseDialog() {
+  dialog.visible = false;
+  dataFormRef.value.resetFields();
+  dataFormRef.value.clearValidate();
+  formData.id = undefined;
+  // 重置顾客选择状态
+  clearCustomerSelection();
+}
+
+/** 删除验光记录 */
+function handleDelete(id?: number) {
+  const ids = [id || removeIds.value].join(",");
+  if (!ids) {
+    ElMessage.warning("请勾选删除项");
+    return;
+  }
+
+  ElMessageBox.confirm("确认删除已选中的数据项?", "警告", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(
+    () => {
+      loading.value = true;
+      EyeExamAPI.deleteByIds(ids)
+        .then(() => {
+          ElMessage.success("删除成功");
+          handleResetQuery();
+        })
+        .finally(() => (loading.value = false));
+    },
+    () => {
+      ElMessage.info("已取消删除");
+    }
+  );
+}
+
+onMounted(() => {
+  handleQuery();
+});
+</script>
+
+<style scoped>
+.eye-data-card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  font-weight: bold;
+  text-align: center;
+}
+
+:deep(.el-input-number.is-controls-right .el-input__wrapper) {
+  padding-right: 40px;
+}
+</style>
