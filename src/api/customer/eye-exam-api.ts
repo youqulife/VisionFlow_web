@@ -67,7 +67,91 @@ const EyeExamAPI = {
 export default EyeExamAPI;
 
 /** 验光记录分页查询参数 */
-export interface EyeExamPageQuery extends PageQuery {}
+export interface EyeExamPageQuery extends PageQuery {
+  /** 顾客姓名 */
+  customerName?: string;
+  /** 顾客手机号 */
+  customerPhone?: string;
+  /** 验光开始日期 */
+  examDateBegin?: string;
+  /** 验光结束日期 */
+  examDateEnd?: string;
+}
+
+/** 眼镜佩戴历史数据结构 */
+export interface WearingHistory {
+  /** 版本号 */
+  version: number;
+  /** 是否为当前佩戴 */
+  isCurrent: boolean;
+  /** 基本信息 */
+  basicInfo: {
+    /** 是否首副眼镜 */
+    isFirstGlasses: boolean;
+    /** 是否佩戴过眼镜 */
+    hasWornGlasses: boolean;
+    /** 佩戴状态 */
+    wearingStatus: "current" | "past" | "never";
+    /** 佩戴年限 */
+    wearingYears: number;
+    /** 开始佩戴年龄 */
+    startAge: number;
+  };
+  /** 当前眼镜信息 */
+  currentGlasses: {
+    /** 眼镜类型 */
+    type: "single_vision" | "bifocal" | "progressive" | "reading";
+    /** 镜框类型 */
+    frameType: "full_rim" | "semi_rim" | "rimless";
+    /** 镜片材质 */
+    lensMaterial: "resin" | "glass" | "pc";
+    /** 使用时长(月) */
+    ageMonths: number;
+    /** 购买地点 */
+    purchaseLocation: "our_shop" | "other_shop" | "online" | "hospital" | "mall";
+  };
+  /** 使用习惯 */
+  usagePatterns: {
+    /** 每日佩戴时长 */
+    dailyDuration: "full_day" | "occasional" | "specific_occasions";
+    /** 主要使用场景 */
+    mainScenarios: Array<"reading" | "computer" | "driving" | "outdoor" | "sports">;
+    /** 佩戴频率 */
+    frequency: "everyday" | "weekdays" | "weekends" | "occasionally";
+  };
+  /** 佩戴舒适度评估 */
+  comfortAssessment: {
+    /** 舒适度 */
+    comfortLevel:
+      | "very_comfortable"
+      | "comfortable"
+      | "moderate"
+      | "uncomfortable"
+      | "very_uncomfortable";
+    /** 视力满意度 */
+    visionSatisfaction:
+      | "very_satisfied"
+      | "satisfied"
+      | "moderate"
+      | "unsatisfied"
+      | "very_unsatisfied";
+    /** 具体问题 */
+    specificIssues: Array<"dizziness" | "eye_strain" | "headache" | "blurry_vision" | "nausea">;
+  };
+  /** 变更信息 */
+  changeInfo: {
+    /** 变更原因 */
+    changeReason:
+      | "routine_check"
+      | "prescription_change"
+      | "lens_wear"
+      | "frame_damage"
+      | "lost_stolen"
+      | "appearance_style";
+    /** 变更类型 */
+    changeType: "update" | "new" | "replace";
+  };
+}
 
 /** 验光记录表单对象 */
 export interface EyeExamForm {
@@ -111,6 +195,8 @@ export interface EyeExamForm {
   hasGlassesHistory?: number;
   /** 是否首次验光 */
   isFirstExam?: number;
+  /** 眼镜佩戴历史对象 */
+  wearingHistoryObj?: WearingHistory;
 }
 
 /** 验光记录分页对象 */

@@ -2,6 +2,36 @@
   <div class="app-container">
     <div class="search-container">
       <el-form ref="queryFormRef" :model="queryParams" :inline="true">
+        <el-form-item label="顾客姓名" prop="customerName">
+          <el-input
+            v-model="queryParams.customerName"
+            placeholder="请输入顾客姓名"
+            clearable
+            @keyup.enter="handleQuery"
+          />
+        </el-form-item>
+
+        <el-form-item label="手机号" prop="customerPhone">
+          <el-input
+            v-model="queryParams.customerPhone"
+            placeholder="请输入手机号"
+            clearable
+            @keyup.enter="handleQuery"
+          />
+        </el-form-item>
+
+        <el-form-item label="验光日期" prop="examDateRange">
+          <el-date-picker
+            v-model="examDateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            value-format="YYYY-MM-DD"
+            :disabled-date="disabledDate"
+          />
+        </el-form-item>
+
         <el-form-item class="search-buttons">
           <el-button type="primary" icon="search" @click="handleQuery">搜索</el-button>
           <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
@@ -39,14 +69,21 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column key="id" label="主键ID" prop="id" min-width="150" align="center" />
+        <el-table-column key="id" label="主键ID" prop="id" min-width="80" align="center" />
         <el-table-column
           key="customerId"
-          label="关联的顾客ID"
+          label="顾客"
           prop="customerId"
-          min-width="150"
+          min-width="120"
           align="center"
-        />
+        >
+          <template #default="scope">
+            <div>
+              <div>{{ scope.row.customerName }}</div>
+              <div>{{ scope.row.customerPhone }}</div>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column
           key="examDate"
           label="验光日期"
@@ -68,26 +105,18 @@
           min-width="150"
           align="center"
         />
-        <el-table-column key="odSph" label="右眼球镜" prop="odSph" min-width="150" align="center" />
-        <el-table-column key="odCyl" label="右眼柱镜" prop="odCyl" min-width="150" align="center" />
-        <el-table-column
-          key="odAxis"
-          label="右眼轴位"
-          prop="odAxis"
-          min-width="150"
-          align="center"
-        />
-        <el-table-column key="odPd" label="右眼瞳距" prop="odPd" min-width="150" align="center" />
-        <el-table-column key="osSph" label="左眼球镜" prop="osSph" min-width="150" align="center" />
-        <el-table-column key="osCyl" label="左眼柱镜" prop="osCyl" min-width="150" align="center" />
-        <el-table-column
-          key="osAxis"
-          label="左眼轴位"
-          prop="osAxis"
-          min-width="150"
-          align="center"
-        />
-        <el-table-column key="osPd" label="左眼瞳距" prop="osPd" min-width="150" align="center" />
+        <el-table-column label="左眼数据" align="center">
+          <el-table-column key="osSph" label="球镜" prop="osSph" min-width="120" align="center" />
+          <el-table-column key="osCyl" label="柱镜" prop="osCyl" min-width="120" align="center" />
+          <el-table-column key="osAxis" label="轴位" prop="osAxis" min-width="120" align="center" />
+          <el-table-column key="osPd" label="瞳距" prop="osPd" min-width="120" align="center" />
+        </el-table-column>
+        <el-table-column label="右眼数据" align="center">
+          <el-table-column key="odSph" label="球镜" prop="odSph" min-width="120" align="center" />
+          <el-table-column key="odCyl" label="柱镜" prop="odCyl" min-width="120" align="center" />
+          <el-table-column key="odAxis" label="轴位" prop="odAxis" min-width="120" align="center" />
+          <el-table-column key="odPd" label="瞳距" prop="odPd" min-width="120" align="center" />
+        </el-table-column>
         <el-table-column
           key="pdTotal"
           label="双眼瞳距"
@@ -99,13 +128,6 @@
           key="addition"
           label="下加光"
           prop="addition"
-          min-width="150"
-          align="center"
-        />
-        <el-table-column
-          key="wearingHistory"
-          label="带镜史数据"
-          prop="wearingHistory"
           min-width="150"
           align="center"
         />
@@ -233,6 +255,7 @@
             type="date"
             placeholder="验光日期"
             value-format="YYYY-MM-DD"
+            :disabled-date="disabledDate"
           />
         </el-form-item>
 
@@ -354,15 +377,294 @@
           <el-input v-model="formData.addition" placeholder="下加光" class="!w-[240px]" />
         </el-form-item>
 
-        <el-form-item label="带镜史数据" prop="wearingHistory">
-          <el-input v-model="formData.wearingHistory" placeholder="带镜史数据" class="!w-[240px]" />
-        </el-form-item>
+        <!-- 眼镜佩戴历史（带镜史）专用区域 -->
+        <el-card class="wearing-history-card" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span>眼镜佩戴历史</span>
+            </div>
+          </template>
 
-        <el-form-item label="是否有戴镜史" prop="hasGlassesHistory">
-          <el-radio-group v-model="formData.hasGlassesHistory">
-            <el-radio :value="0">否</el-radio>
-            <el-radio :value="1">是</el-radio>
-          </el-radio-group>
+          <el-form-item label="是否有戴镜史" prop="hasGlassesHistory">
+            <el-radio-group v-model="formData.hasGlassesHistory">
+              <el-radio :value="0">否</el-radio>
+              <el-radio :value="1">是</el-radio>
+            </el-radio-group>
+          </el-form-item>
+
+          <div v-if="formData.hasGlassesHistory === 1 && formData.wearingHistoryObj">
+            <!-- 基本信息 -->
+            <el-divider content-position="left">基本信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="是否首副眼镜" prop="wearingHistory.isFirstGlasses">
+                  <el-switch
+                    v-model="formData.wearingHistoryObj!.basicInfo.isFirstGlasses"
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="是否佩戴过眼镜" prop="wearingHistory.hasWornGlasses">
+                  <el-switch
+                    v-model="formData.wearingHistoryObj!.basicInfo.hasWornGlasses"
+                    active-text="是"
+                    inactive-text="否"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="佩戴状态" prop="wearingHistory.wearingStatus">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.basicInfo.wearingStatus"
+                    placeholder="请选择佩戴状态"
+                    class="w-full"
+                  >
+                    <el-option label="目前在戴" value="current" />
+                    <el-option label="过去佩戴" value="past" />
+                    <el-option label="从未佩戴" value="never" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item
+                  v-if="formData.wearingHistoryObj!.basicInfo.wearingStatus !== 'never'"
+                  label="佩戴年限"
+                  prop="wearingHistory.wearingYears"
+                >
+                  <el-input-number
+                    v-model="formData.wearingHistoryObj!.basicInfo.wearingYears"
+                    placeholder="佩戴年限"
+                    class="w-full"
+                    :min="0"
+                    controls-position="right"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item
+              v-if="formData.wearingHistoryObj!.basicInfo.wearingStatus !== 'never'"
+              label="开始佩戴年龄"
+              prop="wearingHistory.startAge"
+            >
+              <el-input-number
+                v-model="formData.wearingHistoryObj!.basicInfo.startAge"
+                placeholder="开始佩戴年龄"
+                class="!w-[240px]"
+                :min="0"
+                controls-position="right"
+              />
+            </el-form-item>
+
+            <!-- 当前眼镜信息 -->
+            <el-divider content-position="left">当前眼镜信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="眼镜类型" prop="wearingHistory.currentGlasses.type">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.currentGlasses.type"
+                    placeholder="请选择眼镜类型"
+                    class="w-full"
+                  >
+                    <el-option label="单光镜" value="single_vision" />
+                    <el-option label="双光镜" value="bifocal" />
+                    <el-option label="渐进多焦点镜" value="progressive" />
+                    <el-option label="老花镜" value="reading" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="镜框类型" prop="wearingHistory.currentGlasses.frameType">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.currentGlasses.frameType"
+                    placeholder="请选择镜框类型"
+                    class="w-full"
+                  >
+                    <el-option label="全框" value="full_rim" />
+                    <el-option label="半框" value="semi_rim" />
+                    <el-option label="无框" value="rimless" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="镜片材质" prop="wearingHistory.currentGlasses.lensMaterial">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.currentGlasses.lensMaterial"
+                    placeholder="请选择镜片材质"
+                    class="w-full"
+                  >
+                    <el-option label="树脂" value="resin" />
+                    <el-option label="玻璃" value="glass" />
+                    <el-option label="PC" value="pc" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="使用时长(月)" prop="wearingHistory.currentGlasses.ageMonths">
+                  <el-input-number
+                    v-model="formData.wearingHistoryObj!.currentGlasses.ageMonths"
+                    placeholder="使用时长(月)"
+                    class="w-full"
+                    :min="0"
+                    controls-position="right"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item label="购买地点" prop="wearingHistory.currentGlasses.purchaseLocation">
+              <el-select
+                v-model="formData.wearingHistoryObj!.currentGlasses.purchaseLocation"
+                placeholder="请选择购买地点"
+                class="!w-[240px]"
+              >
+                <el-option label="本店" value="our_shop" />
+                <el-option label="其他眼镜店" value="other_shop" />
+                <el-option label="网上购买" value="online" />
+                <el-option label="医院" value="hospital" />
+                <el-option label="超市/商场" value="mall" />
+              </el-select>
+            </el-form-item>
+
+            <!-- 使用习惯 -->
+            <el-divider content-position="left">使用习惯</el-divider>
+            <el-form-item label="每日佩戴时长" prop="wearingHistory.usagePatterns.dailyDuration">
+              <el-select
+                v-model="formData.wearingHistoryObj!.usagePatterns.dailyDuration"
+                placeholder="请选择每日佩戴时长"
+                class="!w-[240px]"
+              >
+                <el-option label="全天佩戴" value="full_day" />
+                <el-option label="偶尔佩戴" value="occasional" />
+                <el-option label="只在特定场合佩戴" value="specific_occasions" />
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="主要使用场景" prop="wearingHistory.usagePatterns.mainScenarios">
+              <el-checkbox-group v-model="formData.wearingHistoryObj!.usagePatterns.mainScenarios">
+                <el-checkbox value="reading">阅读</el-checkbox>
+                <el-checkbox value="computer">电脑工作</el-checkbox>
+                <el-checkbox value="driving">驾驶</el-checkbox>
+                <el-checkbox value="outdoor">户外活动</el-checkbox>
+                <el-checkbox value="sports">运动</el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+
+            <el-form-item label="佩戴频率" prop="wearingHistory.usagePatterns.frequency">
+              <el-select
+                v-model="formData.wearingHistoryObj!.usagePatterns.frequency"
+                placeholder="请选择佩戴频率"
+                class="!w-[240px]"
+              >
+                <el-option label="每天" value="everyday" />
+                <el-option label="工作日" value="weekdays" />
+                <el-option label="周末" value="weekends" />
+                <el-option label="偶尔" value="occasionally" />
+              </el-select>
+            </el-form-item>
+
+            <!-- 佩戴舒适度评估 -->
+            <el-divider content-position="left">佩戴舒适度评估</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="舒适度" prop="wearingHistory.comfortAssessment.comfortLevel">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.comfortAssessment.comfortLevel"
+                    placeholder="请选择舒适度"
+                    class="w-full"
+                  >
+                    <el-option label="非常舒适" value="very_comfortable" />
+                    <el-option label="舒适" value="comfortable" />
+                    <el-option label="一般" value="moderate" />
+                    <el-option label="不舒适" value="uncomfortable" />
+                    <el-option label="非常不舒适" value="very_uncomfortable" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item
+                  label="视力满意度"
+                  prop="wearingHistory.comfortAssessment.visionSatisfaction"
+                >
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.comfortAssessment.visionSatisfaction"
+                    placeholder="请选择视力满意度"
+                    class="w-full"
+                  >
+                    <el-option label="非常满意" value="very_satisfied" />
+                    <el-option label="满意" value="satisfied" />
+                    <el-option label="一般" value="moderate" />
+                    <el-option label="不满意" value="unsatisfied" />
+                    <el-option label="非常不满意" value="very_unsatisfied" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-form-item label="具体问题" prop="wearingHistory.comfortAssessment.specificIssues">
+              <el-checkbox-group
+                v-model="formData.wearingHistoryObj!.comfortAssessment.specificIssues"
+              >
+                <el-checkbox value="dizziness">头晕</el-checkbox>
+                <el-checkbox value="eye_strain">眼疲劳</el-checkbox>
+                <el-checkbox value="headache">头痛</el-checkbox>
+                <el-checkbox value="blurry_vision">视物模糊</el-checkbox>
+                <el-checkbox value="nausea">恶心</el-checkbox>
+              </el-checkbox-group>
+            </el-form-item>
+
+            <!-- 变更信息 -->
+            <el-divider content-position="left">变更信息</el-divider>
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="变更原因" prop="wearingHistory.changeInfo.changeReason">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.changeInfo.changeReason"
+                    placeholder="请选择变更原因"
+                    class="w-full"
+                  >
+                    <el-option label="定期检查" value="routine_check" />
+                    <el-option label="度数变化" value="prescription_change" />
+                    <el-option label="镜片磨损" value="lens_wear" />
+                    <el-option label="镜框损坏" value="frame_damage" />
+                    <el-option label="丢失/被盗" value="lost_stolen" />
+                    <el-option label="外观/款式" value="appearance_style" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="变更类型" prop="wearingHistory.changeInfo.changeType">
+                  <el-select
+                    v-model="formData.wearingHistoryObj!.changeInfo.changeType"
+                    placeholder="请选择变更类型"
+                    class="w-full"
+                  >
+                    <el-option label="更新" value="update" />
+                    <el-option label="新增" value="new" />
+                    <el-option label="更换" value="replace" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </div>
+        </el-card>
+
+        <!-- 佩戴历史对象，用于存储JSON格式的佩戴历史数据 -->
+        <el-form-item label="带镜史数据" prop="wearingHistory" style="display: none">
+          <el-input
+            v-model="formData.wearingHistory"
+            placeholder="带镜史数据"
+            class="!w-[240px]"
+            type="hidden"
+          />
         </el-form-item>
 
         <el-form-item label="是否首次验光" prop="isFirstExam">
@@ -404,9 +706,16 @@ const loading = ref(false);
 const removeIds = ref<number[]>([]);
 const total = ref(0);
 
+// 验光日期范围
+const examDateRange = ref<string[]>([]);
+
 const queryParams = reactive<EyeExamPageQuery>({
   pageNum: 1,
   pageSize: 10,
+  customerName: undefined,
+  customerPhone: undefined,
+  examDateBegin: undefined,
+  examDateEnd: undefined,
 });
 
 // 顾客搜索相关
@@ -432,7 +741,40 @@ const dialog = reactive({
 });
 
 // 验光记录表单数据
-const formData = reactive<EyeExamForm>({});
+const formData = reactive<EyeExamForm>({
+  wearingHistoryObj: {
+    version: 1,
+    isCurrent: true,
+    basicInfo: {
+      isFirstGlasses: false,
+      hasWornGlasses: true,
+      wearingStatus: "current",
+      wearingYears: 0,
+      startAge: 0,
+    },
+    currentGlasses: {
+      type: "single_vision",
+      frameType: "full_rim",
+      lensMaterial: "resin",
+      ageMonths: 0,
+      purchaseLocation: "our_shop",
+    },
+    usagePatterns: {
+      dailyDuration: "full_day",
+      mainScenarios: [],
+      frequency: "everyday",
+    },
+    comfortAssessment: {
+      comfortLevel: "comfortable",
+      visionSatisfaction: "satisfied",
+      specificIssues: [],
+    },
+    changeInfo: {
+      changeReason: "routine_check",
+      changeType: "update",
+    },
+  },
+});
 
 // 验光记录表单校验规则
 const rules = reactive({
@@ -456,6 +798,15 @@ const rules = reactive({
 /** 查询验光记录 */
 function handleQuery() {
   loading.value = true;
+  // 处理验光日期范围查询参数
+  if (examDateRange.value && examDateRange.value.length === 2) {
+    queryParams.examDateBegin = examDateRange.value[0];
+    queryParams.examDateEnd = examDateRange.value[1];
+  } else {
+    queryParams.examDateBegin = undefined;
+    queryParams.examDateEnd = undefined;
+  }
+
   EyeExamAPI.getPage(queryParams)
     .then((data) => {
       pageData.value = data.list;
@@ -469,7 +820,10 @@ function handleQuery() {
 /** 重置验光记录查询 */
 function handleResetQuery() {
   queryFormRef.value!.resetFields();
+  examDateRange.value = [];
   queryParams.pageNum = 1;
+  queryParams.examDateBegin = undefined;
+  queryParams.examDateEnd = undefined;
   handleQuery();
 }
 
@@ -550,11 +904,86 @@ function handleOpenDialog(id?: number) {
         selectedCustomer.name = data.customerName || "";
         selectedCustomer.phone = data.customerPhone || "";
       }
+
+      // 解析佩戴历史JSON数据
+      if (data.wearingHistory) {
+        try {
+          formData.wearingHistoryObj = JSON.parse(data.wearingHistory);
+        } catch (e) {
+          console.error("Failed to parse wearing history", e);
+          // 如果解析失败，使用默认值
+          formData.wearingHistoryObj = {
+            version: 1,
+            isCurrent: true,
+            basicInfo: {
+              isFirstGlasses: false,
+              hasWornGlasses: true,
+              wearingStatus: "current",
+              wearingYears: 0,
+              startAge: 0,
+            },
+            currentGlasses: {
+              type: "single_vision",
+              frameType: "full_rim",
+              lensMaterial: "resin",
+              ageMonths: 0,
+              purchaseLocation: "our_shop",
+            },
+            usagePatterns: {
+              dailyDuration: "full_day",
+              mainScenarios: [],
+              frequency: "everyday",
+            },
+            comfortAssessment: {
+              comfortLevel: "comfortable",
+              visionSatisfaction: "satisfied",
+              specificIssues: [],
+            },
+            changeInfo: {
+              changeReason: "routine_check",
+              changeType: "update",
+            },
+          };
+        }
+      }
     });
   } else {
     dialog.title = "新增验光记录";
     // 重置顾客选择状态
     clearCustomerSelection();
+    // 重置佩戴历史数据
+    formData.wearingHistoryObj = {
+      version: 1,
+      isCurrent: true,
+      basicInfo: {
+        isFirstGlasses: false,
+        hasWornGlasses: true,
+        wearingStatus: "current",
+        wearingYears: 0,
+        startAge: 0,
+      },
+      currentGlasses: {
+        type: "single_vision",
+        frameType: "full_rim",
+        lensMaterial: "resin",
+        ageMonths: 0,
+        purchaseLocation: "our_shop",
+      },
+      usagePatterns: {
+        dailyDuration: "full_day",
+        mainScenarios: [],
+        frequency: "everyday",
+      },
+      comfortAssessment: {
+        comfortLevel: "comfortable",
+        visionSatisfaction: "satisfied",
+        specificIssues: [],
+      },
+      changeInfo: {
+        changeReason: "routine_check",
+        changeType: "update",
+      },
+    };
   }
 }
 
@@ -568,9 +997,49 @@ function handleSubmit() {
         formData.customerId = Number(formData.customerId);
       }
 
+      // 确保wearingHistoryObj存在
+      if (!formData.wearingHistoryObj) {
+        formData.wearingHistoryObj = {
+          version: 1,
+          isCurrent: true,
+          basicInfo: {
+            isFirstGlasses: false,
+            hasWornGlasses: true,
+            wearingStatus: "current",
+            wearingYears: 0,
+            startAge: 0,
+          },
+          currentGlasses: {
+            type: "single_vision",
+            frameType: "full_rim",
+            lensMaterial: "resin",
+            ageMonths: 0,
+            purchaseLocation: "our_shop",
+          },
+          usagePatterns: {
+            dailyDuration: "full_day",
+            mainScenarios: [],
+            frequency: "everyday",
+          },
+          comfortAssessment: {
+            comfortLevel: "comfortable",
+            visionSatisfaction: "satisfied",
+            specificIssues: [],
+          },
+          changeInfo: {
+            changeReason: "routine_check",
+            changeType: "update",
+          },
+        };
+      }
+
+      // 创建一个不包含wearingHistory的formData副本，只保留wearingHistoryObj对象
+      const submitData = { ...formData };
+      delete submitData.wearingHistory;
+
       const id = formData.id;
       if (id) {
-        EyeExamAPI.update(id, formData)
+        EyeExamAPI.update(id, submitData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -578,7 +1047,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        EyeExamAPI.create(formData)
+        EyeExamAPI.create(submitData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();
@@ -626,6 +1095,12 @@ function handleDelete(id?: number) {
       ElMessage.info("已取消删除");
     }
   );
+}
+
+/** 限制日期选择范围 */
+function disabledDate(date: Date) {
+  // 禁用大于今天的日期
+  return date.getTime() > Date.now();
 }
 
 onMounted(() => {
