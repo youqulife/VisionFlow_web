@@ -79,14 +79,16 @@
       </el-form-item>
     </el-form>
 
+    <!-- 注册
     <div flex-center gap-10px>
       <el-text size="default">{{ t("login.noAccount") }}</el-text>
       <el-link type="primary" underline="never" @click="toOtherForm('register')">
         {{ t("login.reg") }}
       </el-link>
     </div>
+    -->
 
-    <!-- 第三方登录 -->
+    <!-- 第三方登录
     <div class="third-party-login">
       <div class="divider-container">
         <div class="divider-line"></div>
@@ -108,6 +110,7 @@
         </CommonWrapper>
       </div>
     </div>
+    -->
   </div>
 </template>
 <script setup lang="ts">
@@ -115,7 +118,6 @@ import type { FormInstance } from "element-plus";
 import AuthAPI, { type LoginFormData } from "@/api/auth-api";
 import router from "@/router";
 import { useUserStore } from "@/store";
-import CommonWrapper from "@/components/CommonWrapper/index.vue";
 import { AuthStorage } from "@/utils/auth";
 
 const { t } = useI18n();
@@ -134,8 +136,8 @@ const captchaBase64 = ref();
 const rememberMe = AuthStorage.getRememberMe();
 
 const loginFormData = ref<LoginFormData>({
-  username: "admin",
-  password: "123456",
+  username: "",
+  password: "",
   captchaKey: "",
   captchaCode: "",
   rememberMe,
