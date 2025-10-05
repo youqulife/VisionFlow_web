@@ -73,16 +73,14 @@ export interface ProductPageQuery extends PageQuery {}
 export interface ProductForm {
   /** 主键ID */
   id?: number;
-  /** 租户ID */
-  tenantId?: number;
-  /** 商品名称：展示给客户的名称 */
-  name?: string;
   /** 商品SKU编码：唯一库存单位编码 */
   sku?: string;
+  /** 商品名称：展示给客户的名称 */
+  name?: string;
   /** 商品分类ID：关联categories表 */
   categoryId?: number;
   /** 品牌名称：如"依视路", "蔡司", "雷朋"等 */
-  brand?: string;
+  brandId?: number;
   /** 型号：商品具体型号 */
   model?: string;
   /** 折射率：如1.56, 1.60, 1.67, 1.74等 */
@@ -99,24 +97,22 @@ export interface ProductForm {
   minStockAlert?: number;
   /** 是否上架：0-下架, 1-上架 */
   isActive?: number;
-  /** 软删除标记：0-未删除, 1-已删除 */
-  isDeleted?: number;
 }
 
 /** 商品信息分页对象 */
 export interface ProductPageVO {
   /** 主键ID */
   id?: number;
-  /** 租户ID */
-  tenantId?: number;
-  /** 商品名称：展示给客户的名称 */
-  name?: string;
   /** 商品SKU编码：唯一库存单位编码 */
   sku?: string;
+  /** 商品名称：展示给客户的名称 */
+  name?: string;
   /** 商品分类ID：关联categories表 */
   categoryId?: number;
+  categoryName?: string;
   /** 品牌名称：如"依视路", "蔡司", "雷朋"等 */
-  brand?: string;
+  brandId?: string;
+  brandName?: string;
   /** 型号：商品具体型号 */
   model?: string;
   /** 折射率：如1.56, 1.60, 1.67, 1.74等 */
@@ -136,7 +132,7 @@ export interface ProductPageVO {
   /** 软删除标记：0-未删除, 1-已删除 */
   isDeleted?: number;
   /** 记录创建时间 */
-  createTime?: string;
+  createTime?: Date;
   /** 记录最后更新时间 */
-  updateTime?: string;
+  updateTime?: Date;
 }

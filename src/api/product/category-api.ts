@@ -11,6 +11,22 @@ const CategoryAPI = {
       params: queryParams,
     });
   },
+  /** 获取商品分类树形列表 */
+  getList(queryParams?: CategoryQuery) {
+    return request<any, CategoryVO[]>({
+      url: `${CATEGORY_BASE_URL}/page`,
+      method: "get",
+      params: queryParams,
+    });
+  },
+  /** 获取商品分类下拉数据源 */
+  getOptions(onlyParent?: boolean) {
+    return request<any, OptionType[]>({
+      url: `${CATEGORY_BASE_URL}/options`,
+      method: "get",
+      params: { onlyParent },
+    });
+  },
   /**
    * 获取商品分类表单数据
    *
@@ -69,6 +85,12 @@ export default CategoryAPI;
 /** 商品分类分页查询参数 */
 export interface CategoryPageQuery extends PageQuery {}
 
+/** 商品分类查询参数 */
+export interface CategoryQuery {
+  /** 关键字(分类名称) */
+  keywords?: string;
+}
+
 /** 商品分类表单对象 */
 export interface CategoryForm {
   /** 主键ID */
@@ -107,4 +129,10 @@ export interface CategoryPageVO {
   createTime?: string;
   /** 记录最后更新时间 */
   updateTime?: string;
+}
+
+/** 商品分类树形节点对象 */
+export interface CategoryVO extends CategoryForm {
+  id?: number;
+  children?: CategoryVO[];
 }

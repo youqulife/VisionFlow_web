@@ -1,310 +1,444 @@
 <template>
-  <div class="app-container h-full flex flex-1 flex-col">
-    <!-- 搜索 -->
-    <page-search
-      ref="searchRef"
-      :search-config="searchConfig"
-      @query-click="handleQueryClick"
-      @reset-click="handleResetClick"
-    ></page-search>
+  <div class="app-container">
+    <div class="search-container">
+      <el-form ref="queryFormRef" :model="queryParams" :inline="true">
+        <el-form-item class="search-buttons">
+          <el-button type="primary" icon="search" @click="handleQuery">搜索</el-button>
+          <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </div>
 
-    <!-- 列表 -->
-    <page-content
-      ref="contentRef"
-      :content-config="contentConfig"
-      @add-click="handleAddClick"
-      @export-click="handleExportClick"
-      @search-click="handleSearchClick"
-      @toolbar-click="handleToolbarClick"
-      @operate-click="handleOperateClick"
-      @filter-change="handleFilterChange"
-    ></page-content>
+    <el-card shadow="never">
+      <div class="mb-10px">
+        <el-button
+          v-hasPerm="['product:product:add']"
+          type="success"
+          icon="plus"
+          @click="handleOpenDialog()"
+        >
+          新增
+        </el-button>
+        <el-button
+          v-hasPerm="['product:product:delete']"
+          type="danger"
+          :disabled="removeIds.length === 0"
+          icon="delete"
+          @click="handleDelete()"
+        >
+          删除
+        </el-button>
+      </div>
 
-    <!-- 新增 -->
-    <page-modal
-      ref="addModalRef"
-      :modal-config="addModalConfig"
-      @submit-click="handleSubmitClick"
-    ></page-modal>
+      <el-table
+        ref="dataTableRef"
+        v-loading="loading"
+        :data="pageData"
+        highlight-current-row
+        border
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" />
+        <el-table-column key="id" label="ID" prop="id" min-width="150" align="center" />
+        <el-table-column key="sku" label="商品SKU" prop="sku" min-width="150" align="center" />
+        <el-table-column key="name" label="商品" prop="name" min-width="150" align="center" />
+        <el-table-column
+          key="categoryId"
+          label="商品分类"
+          prop="categoryId"
+          min-width="150"
+          align="center"
+        >
+          <template #default="scope">
+            {{ getCategoryName(scope.row.categoryId) }}
+          </template>
+        </el-table-column>
+        <el-table-column key="brand" label="品牌" prop="brand" min-width="150" align="center" />
+        <el-table-column key="model" label="型号" prop="model" min-width="150" align="center" />
+        <el-table-column
+          key="refractiveIndex"
+          label="折射率"
+          prop="refractiveIndex"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="lensFunction"
+          label="镜片功能"
+          prop="lensFunction"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="purchasePrice"
+          label="进货价格"
+          prop="purchasePrice"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="salePrice"
+          label="销售价格"
+          prop="salePrice"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="stockQuantity"
+          label="库存数量"
+          prop="stockQuantity"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="minStockAlert"
+          label="最低库存预警线"
+          prop="minStockAlert"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="isActive"
+          label="是否上架：0-下架, 1-上架"
+          prop="isActive"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="createTime"
+          label="记录创建时间"
+          prop="createTime"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column
+          key="updateTime"
+          label="记录最后更新时间"
+          prop="updateTime"
+          min-width="150"
+          align="center"
+        />
+        <el-table-column fixed="right" label="操作" width="220">
+          <template #default="scope">
+            <el-button
+              v-hasPerm="['product:product:edit']"
+              type="primary"
+              size="small"
+              link
+              icon="edit"
+              @click="handleOpenDialog(scope.row.id)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              v-hasPerm="['product:product:delete']"
+              type="danger"
+              size="small"
+              link
+              icon="delete"
+              @click="handleDelete(scope.row.id)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <!-- 编辑 -->
-    <page-modal
-      ref="editModalRef"
-      :modal-config="editModalConfig"
-      @submit-click="handleSubmitClick"
-    ></page-modal>
+      <pagination
+        v-if="total > 0"
+        v-model:total="total"
+        v-model:page="queryParams.pageNum"
+        v-model:limit="queryParams.pageSize"
+        @pagination="handleQuery()"
+      />
+    </el-card>
+
+    <!-- 商品信息表单弹窗 -->
+    <el-drawer
+      v-model="dialog.visible"
+      :title="dialog.title"
+      :size="drawerSize"
+      @close="handleCloseDialog"
+    >
+      <el-form ref="dataFormRef" :model="formData" :rules="rules" label-width="100px">
+        <el-input v-model="formData.id" type="hidden" />
+
+        <el-form-item label="品牌" prop="brand">
+          <el-select v-model="formData.brandId" placeholder="请选择品牌" clearable filterable>
+            <el-option
+              v-for="brand in brandOptions"
+              :key="brand.value"
+              :label="brand.label"
+              :value="brand.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="商品分类" prop="categoryId">
+          <el-tree-select
+            v-model="formData.categoryId"
+            placeholder="请选择商品分类"
+            :data="categoryOptions"
+            filterable
+            check-strictly
+            :render-after-expand="false"
+          />
+        </el-form-item>
+        <el-form-item label="商品名称" prop="name">
+          <el-input v-model="formData.name" placeholder="商品名称：展示给客户的名称" />
+        </el-form-item>
+        <el-form-item label="商品SKU" prop="sku">
+          <el-input v-model="formData.sku" placeholder="商品SKU编码：唯一库存单位编码" />
+        </el-form-item>
+
+        <el-form-item label="型号" prop="model">
+          <el-input v-model="formData.model" placeholder="型号：商品具体型号" />
+        </el-form-item>
+
+        <el-form-item label="折射率" prop="refractiveIndex">
+          <el-input-number
+            v-model="formData.refractiveIndex"
+            placeholder="折射率：如1.56, 1.60, 1.67, 1.74等"
+          />
+        </el-form-item>
+
+        <el-form-item label="镜片功能" prop="lensFunction">
+          <el-input
+            v-model="formData.lensFunction"
+            placeholder="镜片功能：如'防蓝光', '变色', '渐进多焦点'等"
+          />
+        </el-form-item>
+
+        <el-form-item label="进货价格" prop="purchasePrice">
+          <el-input-number v-model="formData.purchasePrice" placeholder="进货价格" />
+        </el-form-item>
+
+        <el-form-item label="销售价格" prop="salePrice">
+          <el-input-number v-model="formData.salePrice" placeholder="销售价格" />
+        </el-form-item>
+
+        <el-form-item label="库存数量" prop="stockQuantity">
+          <el-input-number v-model="formData.stockQuantity" placeholder="库存数量" />
+        </el-form-item>
+
+        <el-form-item label="最低库存预警线" prop="minStockAlert">
+          <el-input-number v-model="formData.minStockAlert" placeholder="最低库存预警线" />
+        </el-form-item>
+
+        <el-form-item label="是否上架" prop="isActive">
+          <el-switch v-model="formData.isActive" :active-value="1" :inactive-value="0" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="handleSubmit()">确定</el-button>
+          <el-button @click="handleCloseDialog()">取消</el-button>
+        </div>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-defineOptions({ name: "Product" });
-
-import ProductAPI, { ProductForm, ProductPageQuery } from "@/api/product/product-api";
-import type { IObject, IModalConfig, IContentConfig, ISearchConfig } from "@/components/CURD/types";
-import usePage from "@/components/CURD/usePage";
-
-// 组合式 CRUD
-const {
-  searchRef,
-  contentRef,
-  addModalRef,
-  editModalRef,
-  handleQueryClick,
-  handleResetClick,
-  handleAddClick,
-  handleEditClick,
-  handleSubmitClick,
-  handleExportClick,
-  handleSearchClick,
-  handleFilterChange,
-} = usePage();
-
-// 搜索配置
-const searchConfig: ISearchConfig = reactive({
-  permPrefix: "product:product",
-  formItems: [],
+defineOptions({
+  name: "Product",
+  inheritAttrs: false,
 });
 
-// 列表配置
-const contentConfig: IContentConfig<ProductPageQuery> = reactive({
-  // 权限前缀
-  permPrefix: "product:product",
-  table: {
-    border: true,
-    highlightCurrentRow: true,
-  },
-  // 主键
-  pk: "id",
-  // 列表查询接口
-  indexAction: ProductAPI.getPage,
-  // 删除接口
-  deleteAction: ProductAPI.deleteByIds,
-  // 数据解析函数
-  parseData(res: any) {
-    return {
-      total: res.total,
-      list: res.list,
-    };
-  },
-  // 分页配置
-  pagination: {
-    background: true,
-    layout: "total, sizes, prev, pager, next, jumper",
-    pageSize: 20,
-    pageSizes: [10, 20, 30, 50],
-  },
-  // 工具栏配置
-  toolbar: ["add", "delete"],
-  defaultToolbar: ["refresh", "filter"],
-  // 表格列配置
-  cols: [
-    { type: "selection", width: 55, align: "center" },
-    { label: "主键ID", prop: "id" },
-    { label: "租户ID", prop: "tenantId" },
-    { label: "商品名称：展示给客户的名称", prop: "name" },
-    { label: "商品SKU编码：唯一库存单位编码", prop: "sku" },
-    { label: "商品分类ID：关联categories表", prop: "categoryId" },
-    { label: "品牌名称：如'依视路', '蔡司', '雷朋'等", prop: "brand" },
-    { label: "型号：商品具体型号", prop: "model" },
-    { label: "折射率：如1.56, 1.60, 1.67, 1.74等", prop: "refractiveIndex" },
-    { label: "镜片功能：如'防蓝光', '变色', '渐进多焦点'等", prop: "lensFunction" },
-    { label: "进货价格", prop: "purchasePrice" },
-    { label: "销售价格", prop: "salePrice" },
-    { label: "库存数量", prop: "stockQuantity" },
-    { label: "最低库存预警线", prop: "minStockAlert" },
-    { label: "是否上架：0-下架, 1-上架", prop: "isActive" },
-    { label: "软删除标记：0-未删除, 1-已删除", prop: "isDeleted" },
-    { label: "记录创建时间", prop: "createdAt" },
-    { label: "记录最后更新时间", prop: "updatedAt" },
-    {
-      label: "操作",
-      prop: "operation",
-      width: 220,
-      templet: "tool",
-      operat: ["edit", "delete"],
-    },
-  ],
+import ProductAPI, {
+  ProductPageVO,
+  ProductForm,
+  ProductPageQuery,
+} from "@/api/product/product-api";
+import CategoryAPI from "@/api/product/category-api";
+import BrandAPI from "@/api/product/brand-api";
+import { DeviceEnum } from "@/enums/settings/device-enum";
+import { useAppStore } from "@/store";
+
+const queryFormRef = ref();
+const dataFormRef = ref();
+const appStore = useAppStore();
+
+const loading = ref(false);
+const removeIds = ref<number[]>([]);
+const total = ref(0);
+
+const queryParams = reactive<ProductPageQuery>({
+  pageNum: 1,
+  pageSize: 10,
 });
 
-// 新增配置
-const addModalConfig: IModalConfig<ProductForm> = reactive({
-  // 权限前缀
-  permPrefix: "product:product",
-  // 主键
-  pk: "id",
-  // 弹窗配置
-  dialog: {
-    title: "新增",
-    width: 800,
-    draggable: true,
-  },
-  form: {
-    labelWidth: 100,
-  },
-  // 表单项配置
-  formItems: [
-    {
-      type: "input",
-      attrs: {
-        placeholder: "租户ID",
-      },
-      rules: [{ required: true, message: "租户ID不能为空", trigger: "blur" }],
-      label: "租户ID",
-      prop: "tenantId",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "商品名称：展示给客户的名称",
-      },
-      rules: [{ required: true, message: "商品名称：展示给客户的名称不能为空", trigger: "blur" }],
-      label: "商品名称：展示给客户的名称",
-      prop: "name",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "商品SKU编码：唯一库存单位编码",
-      },
-      label: "商品SKU编码：唯一库存单位编码",
-      prop: "sku",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "商品分类ID：关联categories表",
-      },
-      rules: [{ required: true, message: "商品分类ID：关联categories表不能为空", trigger: "blur" }],
-      label: "商品分类ID：关联categories表",
-      prop: "categoryId",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "品牌名称：如'依视路', '蔡司', '雷朋'等",
-      },
-      label: "品牌名称：如'依视路', '蔡司', '雷朋'等",
-      prop: "brand",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "型号：商品具体型号",
-      },
-      label: "型号：商品具体型号",
-      prop: "model",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "折射率：如1.56, 1.60, 1.67, 1.74等",
-      },
-      label: "折射率：如1.56, 1.60, 1.67, 1.74等",
-      prop: "refractiveIndex",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "镜片功能：如'防蓝光', '变色', '渐进多焦点'等",
-      },
-      label: "镜片功能：如'防蓝光', '变色', '渐进多焦点'等",
-      prop: "lensFunction",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "进货价格",
-      },
-      rules: [{ required: true, message: "进货价格不能为空", trigger: "blur" }],
-      label: "进货价格",
-      prop: "purchasePrice",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "销售价格",
-      },
-      rules: [{ required: true, message: "销售价格不能为空", trigger: "blur" }],
-      label: "销售价格",
-      prop: "salePrice",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "库存数量",
-      },
-      rules: [{ required: true, message: "库存数量不能为空", trigger: "blur" }],
-      label: "库存数量",
-      prop: "stockQuantity",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "最低库存预警线",
-      },
-      rules: [{ required: true, message: "最低库存预警线不能为空", trigger: "blur" }],
-      label: "最低库存预警线",
-      prop: "minStockAlert",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "是否上架：0-下架, 1-上架",
-      },
-      rules: [{ required: true, message: "是否上架：0-下架, 1-上架不能为空", trigger: "blur" }],
-      label: "是否上架：0-下架, 1-上架",
-      prop: "isActive",
-    },
-    {
-      type: "input",
-      attrs: {
-        placeholder: "软删除标记：0-未删除, 1-已删除",
-      },
-      rules: [
-        { required: true, message: "软删除标记：0-未删除, 1-已删除不能为空", trigger: "blur" },
-      ],
-      label: "软删除标记：0-未删除, 1-已删除",
-      prop: "isDeleted",
-    },
-  ],
-  // 提交函数
-  formAction: (data: ProductForm) => {
-    if (data.id) {
-      // 编辑
-      return ProductAPI.update(data.id as string, data);
-    } else {
-      // 新增
-      return ProductAPI.create(data);
+// 商品信息表格数据
+const pageData = ref<ProductPageVO[]>([]);
+
+// 弹窗
+const dialog = reactive({
+  title: "",
+  visible: false,
+});
+
+// 商品信息表单数据
+const formData = reactive<ProductForm>({});
+
+// 商品分类选项
+const categoryOptions = ref<OptionType[]>([]);
+
+// 品牌选项
+const brandOptions = ref<OptionType[]>([]);
+
+// 抽屉宽度
+const drawerSize = computed(() => (appStore.device === DeviceEnum.DESKTOP ? "600px" : "90%"));
+
+// 商品信息表单校验规则
+const rules = reactive({
+  name: [{ required: true, message: "请输入商品名称", trigger: "blur" }],
+  categoryId: [{ required: true, message: "请选择商品分类", trigger: "blur" }],
+  brand: [{ required: true, message: "请选择品牌", trigger: "blur" }],
+  purchasePrice: [{ required: true, message: "请输入进货价格", trigger: "blur" }],
+  salePrice: [{ required: true, message: "请输入销售价格", trigger: "blur" }],
+  stockQuantity: [{ required: true, message: "请输入库存数量", trigger: "blur" }],
+  minStockAlert: [{ required: true, message: "请输入最低库存预警线", trigger: "blur" }],
+});
+
+// 获取分类名称
+const getCategoryName = (categoryId: number) => {
+  const findCategory = (categories: OptionType[]): string | undefined => {
+    for (const category of categories) {
+      if (category.value == categoryId) {
+        return category.label;
+      }
+      if (category.children) {
+        const found = findCategory(category.children);
+        if (found) {
+          return found;
+        }
+      }
     }
-  },
-});
+  };
 
-// 编辑配置
-const editModalConfig: IModalConfig<ProductForm> = reactive({
-  permPrefix: "product:product",
-  component: "drawer",
-  drawer: {
-    title: "编辑",
-    size: 500,
-  },
-  pk: "id",
-  formAction(data: any) {
-    return ProductAPI.update(data.id as string, data);
-  },
-  formItems: addModalConfig.formItems, // 复用新增的表单项
-});
+  return findCategory(categoryOptions.value) || categoryId;
+};
 
-// 处理操作按钮点击
-const handleOperateClick = (data: IObject) => {
-  if (data.name === "edit") {
-    handleEditClick(data.row, async () => {
-      return await ProductAPI.getFormData(data.row.id);
+/** 查询商品信息 */
+function handleQuery() {
+  loading.value = true;
+  ProductAPI.getPage(queryParams)
+    .then((data) => {
+      pageData.value = data.list;
+      total.value = data.total;
+    })
+    .finally(() => {
+      loading.value = false;
     });
-  }
+}
+
+// 获取商品分类选项
+const loadCategoryOptions = () => {
+  CategoryAPI.getOptions().then((data) => {
+    categoryOptions.value = data;
+  });
 };
 
-// 处理工具栏按钮点击（删除等）
-const handleToolbarClick = (name: string) => {
-  console.log(name);
+// 获取品牌选项 - 修改为直接获取分页数据并转换格式
+const loadBrandOptions = () => {
+  BrandAPI.getPage().then((response) => {
+    brandOptions.value = response.list.map((item) => ({
+      value: item.id,
+      label: item.name,
+    }));
+  });
 };
+
+/** 重置商品信息查询 */
+function handleResetQuery() {
+  queryFormRef.value!.resetFields();
+  queryParams.pageNum = 1;
+  handleQuery();
+}
+
+/** 行复选框选中记录选中ID集合 */
+function handleSelectionChange(selection: any) {
+  removeIds.value = selection.map((item: any) => item.id);
+}
+
+/** 打开商品信息弹窗 */
+function handleOpenDialog(id?: number) {
+  dialog.visible = true;
+  if (id) {
+    dialog.title = "修改商品信息";
+    ProductAPI.getFormData(id).then((data) => {
+      Object.assign(formData, data);
+    });
+  } else {
+    dialog.title = "新增商品信息";
+  }
+}
+
+/** 提交商品信息表单 */
+function handleSubmit() {
+  dataFormRef.value.validate((valid: any) => {
+    if (valid) {
+      loading.value = true;
+      const id = formData.id;
+      if (id) {
+        ProductAPI.update(String(id), formData)
+          .then(() => {
+            ElMessage.success("修改成功");
+            handleCloseDialog();
+            handleResetQuery();
+          })
+          .finally(() => (loading.value = false));
+      } else {
+        ProductAPI.create(formData)
+          .then(() => {
+            ElMessage.success("新增成功");
+            handleCloseDialog();
+            handleResetQuery();
+          })
+          .finally(() => (loading.value = false));
+      }
+    }
+  });
+}
+
+/** 关闭商品信息弹窗 */
+function handleCloseDialog() {
+  dialog.visible = false;
+  dataFormRef.value.resetFields();
+  dataFormRef.value.clearValidate();
+  formData.id = undefined;
+}
+
+/** 删除商品信息 */
+function handleDelete(id?: number) {
+  const ids = [id || removeIds.value].join(",");
+  if (!ids) {
+    ElMessage.warning("请勾选删除项");
+    return;
+  }
+
+  ElMessageBox.confirm("确认删除已选中的数据项?", "警告", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  }).then(
+    () => {
+      loading.value = true;
+      ProductAPI.deleteByIds(ids)
+        .then(() => {
+          ElMessage.success("删除成功");
+          handleResetQuery();
+        })
+        .finally(() => (loading.value = false));
+    },
+    () => {
+      ElMessage.info("已取消删除");
+    }
+  );
+}
+
+onMounted(() => {
+  handleQuery();
+  loadCategoryOptions();
+  loadBrandOptions();
+});
 </script>
