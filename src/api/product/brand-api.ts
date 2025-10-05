@@ -74,7 +74,18 @@ const BrandAPI = {
 export default BrandAPI;
 
 /** 品牌分页查询参数 */
-export interface BrandPageQuery extends PageQuery {}
+export interface BrandPageQuery extends PageQuery {
+  /** 品牌名称 */
+  name?: string;
+  /** 品牌分类 */
+  category?: string;
+  /** 价格等级 */
+  priceLevel?: string;
+  /** 是否热门 */
+  isPopular?: number;
+  /** 状态 */
+  status?: number;
+}
 
 /** 品牌表单对象 */
 export interface BrandForm {
@@ -82,16 +93,24 @@ export interface BrandForm {
   id?: number;
   /** 品牌名称 */
   name?: string;
+  /** 英文名称 */
+  englishName?: string;
+  /** 原产国 */
+  originCountry?: string;
+  /** 品牌分类 */
+  category?: string;
+  /** 价格等级 */
+  priceLevel?: string;
   /** 品牌Logo URL */
   logoUrl?: string;
-  /** 品牌描述 */
-  description?: string;
-  /** 官方网站 */
-  website?: string;
-  /** 状态：0-禁用，1-启用 */
+  /** 是否热门 */
+  isPopular?: number;
+  /** 状态 */
   status?: number;
   /** 排序值，越大越靠前 */
   sortOrder?: number;
+  /** 品牌描述 */
+  description?: string;
 }
 
 /** 品牌分页对象 */
@@ -100,16 +119,24 @@ export interface BrandPageVO {
   id?: number;
   /** 品牌名称 */
   name?: string;
+  /** 英文名称 */
+  englishName?: string;
+  /** 原产国 */
+  originCountry?: string;
+  /** 品牌分类 */
+  category?: string;
+  /** 价格等级 */
+  priceLevel?: string;
   /** 品牌Logo URL */
   logoUrl?: string;
-  /** 品牌描述 */
-  description?: string;
-  /** 官方网站 */
-  website?: string;
-  /** 状态：0-禁用，1-启用 */
+  /** 是否热门 */
+  isPopular?: number;
+  /** 状态 */
   status?: number;
   /** 排序值，越大越靠前 */
   sortOrder?: number;
-  createTime?: Date;
-  updateTime?: Date;
+  /** 品牌描述 */
+  description?: string;
+  createTime?: string;
+  updateTime?: string;
 }

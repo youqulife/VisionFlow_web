@@ -2,6 +2,24 @@
   <div class="app-container">
     <div class="search-container">
       <el-form ref="queryFormRef" :model="queryParams" :inline="true">
+        <el-form-item label="品牌名称" prop="name">
+          <el-input v-model="queryParams.name" placeholder="请输入品牌名称" />
+        </el-form-item>
+        <el-form-item label="品牌分类" prop="category">
+          <el-input v-model="queryParams.category" placeholder="请输入品牌分类" />
+        </el-form-item>
+        <el-form-item label="是否热门" prop="isPopular">
+          <el-select v-model="queryParams.isPopular" placeholder="请选择是否热门" clearable>
+            <el-option label="是" :value="1" />
+            <el-option label="否" :value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
         <el-form-item class="search-buttons">
           <el-button type="primary" icon="search" @click="handleQuery">搜索</el-button>
           <el-button icon="refresh" @click="handleResetQuery">重置</el-button>
@@ -39,58 +57,103 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column key="id" label="品牌ID" prop="id" min-width="150" align="center" />
-        <el-table-column key="name" label="品牌名称" prop="name" min-width="150" align="center" />
+        <el-table-column key="id" label="品牌ID" prop="id" min-width="100" align="center" />
+        <el-table-column key="name" label="品牌名称" prop="name" min-width="120" align="center" />
+        <el-table-column
+          key="englishName"
+          label="英文名称"
+          prop="englishName"
+          min-width="120"
+          align="center"
+        />
+        <el-table-column
+          key="originCountry"
+          label="原产国"
+          prop="originCountry"
+          min-width="100"
+          align="center"
+        />
+        <el-table-column
+          key="category"
+          label="品牌分类"
+          prop="category"
+          min-width="100"
+          align="center"
+        />
+        <el-table-column
+          key="priceLevel"
+          label="价格等级"
+          prop="priceLevel"
+          min-width="100"
+          align="center"
+        />
         <el-table-column
           key="logoUrl"
-          label="品牌Logo URL"
+          label="品牌Logo"
           prop="logoUrl"
           min-width="150"
+          align="center"
+        >
+          <template #default="scope">
+            <el-image
+              v-if="scope.row.logoUrl"
+              :src="scope.row.logoUrl"
+              :preview-src-list="[scope.row.logoUrl]"
+              preview-teleported
+              fit="cover"
+              class="w-8 h-8"
+            />
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          key="isPopular"
+          label="是否热门"
+          prop="isPopular"
+          min-width="80"
+          align="center"
+        >
+          <template #default="scope">
+            <el-tag v-if="scope.row.isPopular === 1" type="success">是</el-tag>
+            <el-tag v-else type="info">否</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column key="status" label="状态" prop="status" min-width="80" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.status === 1" type="success">启用</el-tag>
+            <el-tag v-else type="info">禁用</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          key="sortOrder"
+          label="排序"
+          prop="sortOrder"
+          min-width="80"
           align="center"
         />
         <el-table-column
           key="description"
           label="品牌描述"
           prop="description"
-          min-width="150"
+          min-width="200"
           align="center"
-        />
-        <el-table-column
-          key="website"
-          label="官方网站"
-          prop="website"
-          min-width="150"
-          align="center"
-        />
-        <el-table-column
-          key="status"
-          label="状态：0-禁用，1-启用"
-          prop="status"
-          min-width="150"
-          align="center"
-        />
-        <el-table-column
-          key="sortOrder"
-          label="排序值，越大越靠前"
-          prop="sortOrder"
-          min-width="150"
-          align="center"
+          show-overflow-tooltip
         />
         <el-table-column
           key="createTime"
-          label=""
+          label="创建时间"
           prop="createTime"
           min-width="150"
           align="center"
         />
         <el-table-column
           key="updateTime"
-          label=""
+          label="更新时间"
           prop="updateTime"
           min-width="150"
           align="center"
         />
-        <el-table-column fixed="right" label="操作" width="220">
+        <el-table-column fixed="right" label="操作" width="150">
           <template #default="scope">
             <el-button
               v-hasPerm="['product:brand:edit']"
@@ -134,30 +197,106 @@
     >
       <el-form ref="dataFormRef" :model="formData" :rules="rules" label-width="100px">
         <el-input v-model="formData.id" type="hidden" />
-        <el-form-item label="品牌名称" prop="name">
-          <el-input v-model="formData.name" placeholder="品牌名称" />
-        </el-form-item>
+
+        <el-row :gutter="15">
+          <el-col :span="12">
+            <el-form-item label="品牌名称" prop="name">
+              <el-input v-model="formData.name" placeholder="请输入品牌名称" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="英文名称" prop="englishName">
+              <el-input v-model="formData.englishName" placeholder="请输入英文名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="15">
+          <el-col :span="12">
+            <el-form-item label="原产国" prop="originCountry">
+              <el-input v-model="formData.originCountry" placeholder="请输入原产国" />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="品牌分类" prop="category">
+              <el-input v-model="formData.category" placeholder="请输入品牌分类" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="15">
+          <el-col :span="12">
+            <el-form-item label="价格等级" prop="priceLevel">
+              <el-select
+                v-model="formData.priceLevel"
+                placeholder="请选择价格等级"
+                clearable
+                style="width: 100%"
+              >
+                <el-option label="奢华" value="luxury" />
+                <el-option label="高端" value="premium" />
+                <el-option label="中端" value="mid-range" />
+                <el-option label="经济" value="economic" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="排序" prop="sortOrder">
+              <el-input-number
+                v-model="formData.sortOrder"
+                controls-position="right"
+                :min="0"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
         <el-form-item label="品牌Logo" prop="logoUrl">
-          <el-input v-model="formData.logoUrl" placeholder="品牌Logo URL" />
+          <el-input v-model="formData.logoUrl" placeholder="请输入品牌Logo URL" />
         </el-form-item>
 
         <el-form-item label="品牌描述" prop="description">
-          <el-input v-model="formData.description" type="textarea" placeholder="品牌描述" />
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入品牌描述"
+            maxlength="500"
+            show-word-limit
+          />
         </el-form-item>
 
-        <el-form-item label="官方网站" prop="website">
-          <el-input v-model="formData.website" placeholder="官方网站" />
-        </el-form-item>
+        <el-row :gutter="15">
+          <el-col :span="12">
+            <el-form-item label="是否热门" prop="isPopular">
+              <el-switch
+                v-model="formData.isPopular"
+                :active-value="1"
+                :inactive-value="0"
+                active-text="是"
+                inactive-text="否"
+              />
+            </el-form-item>
+          </el-col>
 
-        <el-form-item label="状态" prop="status">
-          <el-switch v-model="formData.status" :active-value="1" :inactive-value="0" />
-        </el-form-item>
-
-        <el-form-item label="排序值，越大越靠前" prop="sortOrder">
-          <el-input-number v-model="formData.sortOrder" placeholder="排序值，越大越靠前" />
-        </el-form-item>
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-switch
+                v-model="formData.status"
+                :active-value="1"
+                :inactive-value="0"
+                active-text="启用"
+                inactive-text="禁用"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
+
       <template #footer>
         <div class="dialog-footer">
           <el-button type="primary" @click="handleSubmit()">确定</el-button>
@@ -207,10 +346,9 @@ const formData = reactive<BrandForm>({});
 
 // 品牌表单校验规则
 const rules = reactive({
-  id: [{ required: true, message: "请输入品牌ID", trigger: "blur" }],
   name: [{ required: true, message: "请输入品牌名称", trigger: "blur" }],
-  status: [{ required: true, message: "请输入状态：0-禁用，1-启用", trigger: "blur" }],
-  sortOrder: [{ required: true, message: "请输入排序值，越大越靠前", trigger: "blur" }],
+  category: [{ required: true, message: "请输入品牌分类", trigger: "blur" }],
+  status: [{ required: true, message: "请选择状态", trigger: "blur" }],
 });
 
 /** 查询品牌 */
@@ -258,7 +396,7 @@ function handleSubmit() {
       loading.value = true;
       const id = formData.id;
       if (id) {
-        BrandAPI.update(id, formData)
+        BrandAPI.update(id.toString(), formData)
           .then(() => {
             ElMessage.success("修改成功");
             handleCloseDialog();
@@ -266,7 +404,7 @@ function handleSubmit() {
           })
           .finally(() => (loading.value = false));
       } else {
-        BrandAPI.add(formData)
+        BrandAPI.create(formData)
           .then(() => {
             ElMessage.success("新增成功");
             handleCloseDialog();
