@@ -116,8 +116,12 @@
                       {{ scope.row.skuAttributes?.size?.display || "-" }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="进货价" prop="purchasePrice" width="120" align="center" />
-                  <el-table-column label="销售价" prop="salePrice" width="120" align="center" />
+                  <el-table-column label="进货价" width="120" align="center">
+                    <template #default="scope">¥{{ scope.row.purchasePrice }}</template>
+                  </el-table-column>
+                  <el-table-column label="销售价" width="120" align="center">
+                    <template #default="scope">¥{{ scope.row.salePrice }}</template>
+                  </el-table-column>
                   <el-table-column label="库存" prop="stockQuantity" width="120" align="center" />
                   <el-table-column
                     label="库存预警"
@@ -130,6 +134,18 @@
                       <el-tag :type="scope.row.isActive ? 'success' : 'info'">
                         {{ scope.row.isActive ? "启用" : "禁用" }}
                       </el-tag>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="80" align="center">
+                    <template #default="scope">
+                      <el-button
+                        type="danger"
+                        link
+                        size="small"
+                        @click="handleDeleteSku(scope.row.id)"
+                      >
+                        删除
+                      </el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -297,7 +313,7 @@
               </el-col>
             </el-row>
 
-            <el-row :gutter="20">
+            <el-row :gutter="20" class="mt-15px">
               <el-col :span="12">
                 <el-form-item label="镜框形状" prop="attribute.frameShape">
                   <el-input v-model="formData.attribute.frameShape" placeholder="镜框形状" />
@@ -310,7 +326,7 @@
               </el-col>
             </el-row>
 
-            <el-form-item label="材料类型" prop="attribute.materialTypes">
+            <el-form-item label="材料类型" prop="attribute.materialTypes" class="mt-15px">
               <el-select
                 v-model="formData.attribute.materialTypes"
                 multiple
@@ -328,7 +344,7 @@
           </el-card>
         </el-form-item>
 
-        <el-form-item label="SKU列表">
+        <el-form-item label="SKU">
           <el-card shadow="never">
             <template #header>
               <div class="flex items-center justify-between">
@@ -364,26 +380,28 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="进货价" width="100">
+              <el-table-column label="进货价" width="120">
                 <template #default="scope">
+                  <span>¥</span>
                   <el-input-number
                     v-model="scope.row.purchasePrice"
                     size="small"
                     :min="0"
                     controls-position="right"
-                    style="width: 100%"
+                    style="width: 90%"
                   />
                 </template>
               </el-table-column>
 
-              <el-table-column label="销售价" width="100">
+              <el-table-column label="销售价" width="120">
                 <template #default="scope">
+                  <span>¥</span>
                   <el-input-number
                     v-model="scope.row.salePrice"
                     size="small"
                     :min="0"
                     controls-position="right"
-                    style="width: 100%"
+                    style="width: 90%"
                   />
                 </template>
               </el-table-column>
@@ -454,6 +472,8 @@
 </template>
 
 <script setup lang="ts">
+import ProductSkuAPI from "@/api/product/product-sku-api";
+
 defineOptions({
   name: "Product",
   inheritAttrs: false,
@@ -681,6 +701,25 @@ function handleDelete(id?: number) {
   );
 }
 
+/** 删除SKU */
+function handleDeleteSku(id: number) {
+  ElMessageBox.confirm("确认删除该SKU?", "警告", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(() => {
+      ProductSkuAPI.deleteByIds(String(id)).then(() => {
+        ElMessage.success("删除成功");
+        // 重新加载数据
+        handleQuery();
+      });
+    })
+    .catch(() => {
+      ElMessage.info("已取消删除");
+    });
+}
+
 onMounted(() => {
   handleQuery();
   loadCategoryOptions();
@@ -691,6 +730,10 @@ onMounted(() => {
 <style scoped>
 .mb-15px {
   margin-bottom: 15px;
+}
+
+.mt-15px {
+  margin-top: 15px;
 }
 
 .expand-content {
