@@ -125,6 +125,6 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "repository": "https://github.com/youqulife/VisionFlow_web.git",
-  "author": "上海忙会儿科技",
+  "author": "有趣生活软件",
   "license": "MIT"
 }

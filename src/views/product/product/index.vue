@@ -105,6 +105,7 @@
                 </template>
 
                 <el-table :data="props.row.skus" border style="width: 100%">
+                  <el-table-column label="SKU名称" prop="name" width="120" align="center" />
                   <el-table-column label="SKU编码" prop="skuCode" width="150" align="center" />
                   <el-table-column label="颜色" width="120" align="center">
                     <template #default="scope">
@@ -354,6 +355,11 @@
             </template>
 
             <el-table :data="formData.skus" border>
+              <el-table-column label="SKU名称" width="80">
+                <template #default="scope">
+                  <el-input v-model="scope.row.name" placeholder="SKU名称" size="small" />
+                </template>
+              </el-table-column>
               <el-table-column label="SKU编码" width="150">
                 <template #default="scope">
                   <el-input v-model="scope.row.skuCode" placeholder="SKU编码" size="small" />

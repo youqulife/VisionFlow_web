@@ -67,7 +67,9 @@ const ProductAPI = {
 export default ProductAPI;
 
 /** 商品信息分页查询参数 */
-export interface ProductPageQuery extends PageQuery {}
+export interface ProductPageQuery extends PageQuery {
+  keywords?: string;
+}
 
 /** SKU表单对象 */
 export interface ProductSkuForm {
@@ -75,6 +77,8 @@ export interface ProductSkuForm {
   id?: number;
   /** 商品ID */
   productId?: number;
+  /** SKU名称 */
+  name?: string;
   /** SKU编码 */
   skuCode?: string;
   /** SKU属性 */
